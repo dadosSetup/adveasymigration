@@ -1,6 +1,6 @@
 from migration.db import connect
-from enums.enums_v2 import userGender
-from enums.enums_v1 import doctorsGender
+from migration.enums.enums_v2 import userGender
+from migration.enums.enums_v1 import doctorsGender
 
 
 def migrate_basic_info():
@@ -18,8 +18,8 @@ def migrate_basic_info():
                     d.deleted_at,
                     u.email
                 FROM doctors d
-                JOIN users u ON d.user_id = u.id
-                JOIN doctor_subscriptions ds ON d.id = ds.doctor_id
+                    JOIN users u ON d.user_id = u.id
+                    JOIN doctor_subscriptions ds ON d.id = ds.doctor_id
                 WHERE
                     d.account_stage IN (1, 2)
                     AND (
@@ -27,6 +27,7 @@ def migrate_basic_info():
                         OR ds.canceled_at >= CURRENT_DATE - INTERVAL '30 days'
                     )
                     AND ds.started_at IS NOT NULL
+                    AND d.id = 1166
             """
             )
 
@@ -48,21 +49,19 @@ def migrate_basic_info():
                 user_id = user[0]
 
                 cur_v2.execute(
-                    "SELECT 1 FROM user_basic_info WHERE user_id = %s", (user_id,)
+                    "SELECT 1 FROM user_basic_infos WHERE user_id = %s", (user_id,)
                 )
                 if cur_v2.fetchone():
                     print(f"Basic info already exists: {cpf}")
                     continue
 
                 gender_key = doctorsGender.get(gender_raw)
-                gender_enum = userGender.get(
-                    gender_key or "NOT_INFORMED", userGender["NOT_INFORMED"]
-                )
+                gender_enum = userGender.get(gender_key, userGender["NOT_INFORMED"])
 
                 cur_v2.execute(
                     """
-                    INSERT INTO user_basic_info
-                        (user_id, name, cpf, birthday, gender, cellphone, deleted_at)
+                    INSERT INTO user_basic_infos
+                        (user_id, full_name, cpf, birthday, gender, cellphone, deleted_at)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
