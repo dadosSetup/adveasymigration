@@ -27,7 +27,6 @@ def migrate_basic_info():
                         OR ds.canceled_at >= CURRENT_DATE - INTERVAL '30 days'
                     )
                     AND ds.started_at IS NOT NULL
-                    AND d.id = 1166
             """
             )
 
